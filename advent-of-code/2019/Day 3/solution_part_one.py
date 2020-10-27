@@ -2,33 +2,36 @@ def distance(vector1, vector2):
   return (abs(vector1['x'] - vector2['x']) + abs(vector1['y'] - vector2['y']))
 
 # There might be a library for this, but it gets the job done.
-def vector(x = 1, y = 1):
+def vector(x = 0, y = 0):
   return { 'x': x, 'y': y }
 
 def addVector(vector1, vector2):
   return vector(vector1['x'] + vector2['x'], vector1['y'] + vector2['y'])
 
-# This "algorithm" is way too slow for the puzzle input we are provided with.
-# Might have to look into an actual algorithm to finish this part of the puzzle.
-def find_collisions(vector_list1, vector_list2):
-  collisions = []
-  for vector1 in vector_list1:
-    for vector2 in vector_list2:
-      print(vector1, vector2)
-      if (vector1 == vector2):
-        collisions.append(vector(vector1['x'], vector1['y']))
-  return collisions
+def multVector(vector1, vector2):
+  return vector(vector1['x'] * vector2['x'], vector1['y'] * vector2['y'])
+
+def convert(v):
+  a = v.split(',')
+  return vector(int(a[0]), int(a[1]))
+
+def parse(v):
+  return str(v['x']) + ',' + str(v['y'])
+
+def find_collisions(path1, path2):
+  return path1.intersection(path2)
 
 def find_nearest(vector_point, vector_list):
-  distances = []
+  nearest = 9999999
   for vector_ in vector_list:
-    dist_between = distance(vector_, vector_point)
-    if (dist_between != 0): distances.append(dist_between)
-  return sorted(distances)[0]
+    _vector = convert(vector_)
+    dist_between = distance(_vector, vector_point)
+    if (dist_between != 0 and nearest > dist_between): nearest = dist_between
+  return nearest
 
-def move(operations, path_vector):
-  current_position = path_vector[-1] # Takes the last element of the list
-
+def move(operations, path):
+  current_location = convert(path.copy().pop()) # makes a copy of the set, takes the last element and converts it to a vector
+                                                # is there any other way to get the last element without making a copy?
   vector_dict = {
     'R': vector(1, 0),
     'U': vector(0, 1),
@@ -36,23 +39,25 @@ def move(operations, path_vector):
     'D': vector(0, -1)
   }
 
-  for operation in operations:
-    times = int(operation[1:len(operation)])
-    for i in range(times):
-      new_position = addVector(current_position, vector_dict[operation[0]])
-      current_position = vector(new_position['x'], new_position['y'])
-      path_vector.append(new_position)
-
-def parse(string):
-  return string.split(',')
+  for opcodes in operations:
+    direction = opcodes[0]
+    steps = int(opcodes[1:len(opcodes)])
+    for i in range(steps):
+      new_location = addVector(current_location, vector_dict[direction])
+      current_location = vector(new_location['x'], new_location['y'])
+      path.add(parse(new_location)) # parses it back to a string so it can be stored in a set
 
 # This looks ugly as heck, mother of god
-input = list(map(parse, open('Day 3/input.txt', 'r').read().split('\n'))) 
-paths = [[vector()], [vector()]]
+def p(string): return string.split(',')
+input = list(map(p, open('input.txt', 'r').read().split('\n'))) 
 
-for i in range(len(input)):
-  move(input[i], paths[i])
+first_path = set({'0,0'})
+second_path = set({'0,0'})
 
-collisions = find_collisions(paths[0], paths[1])
-nearest = find_nearest(vector(), collisions)
-print(nearest)
+move(input[0], first_path)
+move(input[1], second_path)
+
+collisions = find_collisions(first_path, second_path)
+closest = find_nearest(vector(0, 0), collisions)
+
+print(closest)
